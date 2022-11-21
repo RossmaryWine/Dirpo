@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2022 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : Main program body
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2022 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -63,12 +63,11 @@ static void MX_ADC1_Init(void);
 
 /**
   * @brief  The application entry point.
-
+  * @retval int
   */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	uint16_t raw;
 
   /* USER CODE END 1 */
 
@@ -77,24 +76,14 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* USER CDE BEGIN Init */
-	unsigned int analog_read;
-	MX_GPIO_Init();
-	MX_USART2_UART_Init();
-	MX_ADC1_Init();
+  /* USER CODE BEGIN Init */
 
-	ADC_HandleTypeDef hadc1;
-
-	void SystemClock_Config(void);
   /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-	ADC_HandleTypeDef htim2;
-	 void MX_GPIO_Init(void);
-	 void MX_ADC1_Init(void);
 
   /* USER CODE END SysInit */
 
@@ -103,69 +92,30 @@ int main(void)
   MX_USART2_UART_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-	uint16_t AD_RES = 0, Vamb, DC_Multiplier;
-	HAL_Init();
-	SystemClock_Config();
-	MX_GPIO_Init();
-	MX_ADC1_Init();
-//	MX_TIM2_Init();
-//	HAL_TIM_PWM_Start(&htim2, ADC_CHANNEL_1);
-	// Calibrate The ADC On Power-Up For Better Accuracy
-//	HAL_ADCEx_Calibration_Start(&hadc1);
-
-	// Read The Sensor Once To Get The Ambient Level
-	// & Calculate The DutyCycle Multiplier
-	HAL_ADC_Start(&hadc1);
-	HAL_ADC_PollForConversion(&hadc1, 1);
-	Vamb = HAL_ADC_GetValue(&hadc1);
-	DC_Multiplier = 65535 / (4096 - Vamb);
+	  unsigned int voltage;
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
-	while (1) {
+  while (1)
+  {
+	  HAL_ADC_Start(&hadc1);
+	  HAL_ADC_PollForConversion(&hadc1, 1000);
+	  voltage = HAL_ADC_GetValue(&hadc1);
+	  float volt = voltage*(5.6548) + 15.568;
+	  if(volt < 8){
+	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
+	  }else if(volt > 4){
+	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_10);
+	  }else{
+	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+	  }
+	  //toggle on this cock//
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		// Start ADC Conversion
-		HAL_ADC_Start(&hadc1);
-		// Poll ADC1 Perihperal & TimeOut = 1mSec
-		HAL_ADC_PollForConversion(&hadc1, 1);
-		// Read The ADC Conversion Result & Map It To PWM DutyCycle
-		AD_RES = HAL_ADC_GetValue(&hadc1);
-		TIM2->CCR1 = (AD_RES - Vamb) * DC_Multiplier;
-		HAL_Delay(1);
-
-		HAL_ADC_Start(&hadc1);
-		SystemClock_Config();
-		MX_GPIO_Init();
-
-		HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-		analog_read = HAL_ADC_GetValue(&hadc1);
-
-		while (analog_read < 50) {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-			HAL_Delay(1000);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-			HAL_Delay(1000);
-		}
-
-		while (analog_read > 50) {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
-			HAL_Delay(1000);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-			HAL_Delay(1000);
-		}
-
-		while (analog_read < 50 && analog_read < 55) {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-			HAL_Delay(1000);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-			HAL_Delay(1000);
-		}
-	}
+  }
   /* USER CODE END 3 */
 }
 
@@ -254,7 +204,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -316,8 +266,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LD2_Pin|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9
-                          |GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LD2_Pin|kale_Pin|corn_Pin|beets_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -325,10 +274,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD2_Pin PA7 PA8 PA9
-                           PA10 */
-  GPIO_InitStruct.Pin = LD2_Pin|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9
-                          |GPIO_PIN_10;
+  /*Configure GPIO pins : LD2_Pin kale_Pin corn_Pin beets_Pin */
+  GPIO_InitStruct.Pin = LD2_Pin|kale_Pin|corn_Pin|beets_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -347,10 +294,11 @@ static void MX_GPIO_Init(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-	/* User can add his own implementation to report the HAL error return state */
-	__disable_irq();
-	while (1) {
-	}
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 
